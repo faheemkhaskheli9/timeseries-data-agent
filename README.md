@@ -4,7 +4,7 @@
 > This is an original, from-scratch build. It is not affiliated with, and does not
 > contain any code, prompts, data, or business logic from, any employer or client.
 
-![status](https://img.shields.io/badge/status-planned-lightgrey)
+![status](https://img.shields.io/badge/status-phase%201%20in%20progress-yellow)
 ![python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
@@ -50,6 +50,25 @@ Work is broken into phase-tagged user stories tracked as GitHub Issues, not in t
     gh issue list --repo faheemkhaskheli9/timeseries-data-agent --state open --label type:user-story
 
 Implement Phase 1 issues first (later phases depend on it). When you start one, add label `status:in-progress`. When you finish, close it referencing the commit (e.g. `git commit -m "... Closes #4"`) and push.
+
+## Phase 1 quickstart
+
+```bash
+pip install -r requirements.txt
+
+# Streamlit UI: upload a .csv or .json file, preview it
+PYTHONPATH=src streamlit run src/tsda/app.py
+
+# Headless check that a file parses
+PYTHONPATH=src python -m tsda.cli examples/sample.csv
+```
+
+Parsing lives in `tsda.loader.load_timeseries` (fully unit-tested); the app is
+a thin shell that shows `LoadError` messages via `st.error` instead of
+crashing. Supported shapes: CSV, JSON list-of-records, JSON object-of-columns.
+
+VS Code: **TSDA: Streamlit app**, **TSDA: load file (CLI)**, **TSDA: pytest**
+in `.vscode/launch.json`.
 
 ## 6. Repository Structure
 
