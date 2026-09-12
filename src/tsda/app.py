@@ -1,9 +1,9 @@
 """Streamlit entrypoint: ``streamlit run src/tsda/app.py``.
 
 Phase 1 scope: upload a CSV/JSON file, load it into a DataFrame held in
-session state, preview it, and auto-detect the date/value columns with a
-manual override. Data profiling and the question box arrive in later
-issues.
+session state, preview it, auto-detect the date/value columns with a manual
+override, and show a data profile summary. The question box arrives in a
+later phase.
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ from __future__ import annotations
 import streamlit as st
 
 from tsda.loader import LoadError, load_timeseries
+from tsda.profile import MAX_PROFILE_ROWS, ProfileError, profile_dataframe
 from tsda.schema import SchemaError, apply_schema, infer_schema
 
 st.set_page_config(page_title="Time-Series Analytics Chatbot", layout="wide")
@@ -68,5 +69,35 @@ if "df" in st.session_state:
             st.dataframe(sorted_frame.head(50), use_container_width=True)
     else:
         st.info("No date column selected — pick one above to sort the data chronologically.")
+
+    st.subheader("Data profile")
+    try:
+        profile = profile_dataframe(frame, date_column=date_column)
+    except ProfileError as exc:
+        st.error(str(exc))
+    else:
+        if profile.sampled:
+            st.caption(
+                f"Stats computed on the first {profile.sample_size:,} of "
+                f"{profile.row_count:,} rows (limit: {MAX_PROFILE_ROWS:,})."
+            )
+        cols = st.columns(3)
+        cols[0].metric("Rows", f"{profile.row_count:,}")
+        cols[1].metric("Columns", len(profile.columns))
+        if profile.date_range:
+            cols[2].metric("Date range", f"{profile.date_range[0][:10]} to {profile.date_range[1][:10]}")
+
+        st.write("**% missing per column**")
+        st.write({col: f"{pct:.1f}%" for col, pct in profile.missing_pct.items()})
+
+        if profile.numeric_stats:
+            st.write("**Summary statistics (numeric columns)**")
+            st.dataframe(
+                {
+                    col: {"mean": s.mean, "min": s.min, "max": s.max, "std": s.std}
+                    for col, s in profile.numeric_stats.items()
+                },
+                use_container_width=True,
+            )
 else:
     st.info("No dataset loaded yet.")
